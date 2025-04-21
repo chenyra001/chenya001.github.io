@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>不干胶专业报价系统</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .scheme-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .scheme-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding-bottom: 20px;
+        }
+
+        .scheme-card {
+            min-width: 320px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+            color: #ff4444;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            background: white;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        .total-price {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="scheme-header">
+            <h2>不干胶报价方案</h2>
+            <button onclick="addScheme()">+ 添加新方案</button>
+        </div>
+
+        <div class="scheme-container" id="schemeContainer">
+            <!-- 方案卡片动态生成 -->
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>长度(mm)</th>
+                    <th>宽度(mm)</th>
+                    <th>数量</th>
+                    <th>总价</th>
+                </tr>
+            </thead>
+            <tbody id="summaryTable"></tbody>
+        </table>
+    </div>
+
+<script>
+// 完整材料数据（104种）
+const materials = [
+    {name: '易碎纸', price: 7.5, weight: 0.35},
+    {name: '合成纸（54#白底）', price: 2.45, weight: 0.2},
+    {name: '合成纸（54#格底）', price: 2.45, weight: 0.19},
+    {name: '合成纸（75#白底）', price: 2.95, weight: 0.219},
+    {name: '合成纸（75#格底）', price: 2.95, weight: 0.145},
+    {name: '合成纸100#（白底）', price: 5.2, weight: 0.29},
+    {name: '可移合成纸54#（白底）', price: 3.45, weight: 0.19},
+    {name: '可移合成纸75#（白底）', price: 4, weight: 0.219},
+    {name: 'PET光白25#（格底）', price: 3.5, weight: 0.132},
+    {name: 'PET光白50#', price: 3.9, weight: 0.152},
+    {name: '素面银镭射50#（水胶白底）', price: 3.4, weight: 0.21},
+    {name: '素面银镭射50#（水胶格底）', price: 3.4, weight: 0.2},
+    {name: '素面银镭射50#油胶（白底）', price: 4.8, weight: 0.21},
+    {name: '银方格镭射50#（油胶）', price: 5.2, weight: 0.21},
+    {name: '双层格铜', price: 3.5, weight: 0.3},
+    {name: '铜板/特光/书写（热胶黄底）', price: 1.85, weight: 0.194},
+    {name: '铜板/特光/书写（加粘热胶黄底）', price: 1.95, weight: 0.194},
+    {name: '哑银龙25#（强粘黄底）', price: 2.7, weight: 0.182},
+    {name: '哑银龙50#（黄底）', price: 2.75, weight: 0.217},
+    {name: '哑银龙50#强粘（黄底）', price: 3, weight: 0.217},
+    {name: '哑银龙100#（水胶）', price: 6.6, weight: 0.296},
+    {name: '光银龙25#黄底', price: 2.6, weight: 0.186},
+    {name: '光银龙50#黄底', price: 3.1, weight: 0.217},
+    {name: '光银龙100#', price: 7.5, weight: 0.296},
+    {name: '光银龙（100#油胶）', price: 8.5, weight: 0.296},
+    {name: '拉丝银（50#白底）', price: 4.1, weight: 0.203},
+    {name: '透明龙25#强粘（黄底）', price: 2.25, weight: 0.182},
+    {name: '透明龙25#强粘（格底）', price: 2.5, weight: 0.17},
+    {name: '透明龙50#（黄底）', price: 2.65, weight: 0.21},
+    {name: '透明龙50#强粘', price: 2.8, weight: 0.21},
+    {name: '透明龙100#', price: 5.3, weight: 0.296},
+    {name: '透明龙100#油胶', price: 5.6, weight: 0.296},
+    {name: '可移透明龙25#', price: 3.5, weight: 0.182},
+    {name: '可移透明龙50#', price: 4.1, weight: 0.21},
+    {name: '合成纸（54#白底）-过光胶', price: 3.15, weight: 0.23},
+    {name: '合成纸（54#格底）-过光胶', price: 3.15, weight: 0.22},
+    {name: '合成纸（75#白底）-过光胶', price: 3.65, weight: 0.249},
+    {name: '合成纸（75#格底）-过光胶', price: 3.65, weight: 0.185},
+    {name: '合成纸100#（白底）-过光胶', price: 5.9, weight: 0.32},
+    {name: '可移合成纸54#（白底）-过光胶', price: 4.15, weight: 0.22},
+    {name: '可移合成纸75#（白底）-过光胶', price: 4.7, weight: 0.249},
+    {name: 'PET光白25#（格底）-过光胶', price: 4.3, weight: 0.162},
+    {name: 'PET光白50# -过光胶', price: 4.7, weight: 0.182},
+    {name: '素面银镭射50#（水胶白底）-过光胶', price: 4.1, weight: 0.24},
+    {name: '素面银镭射50#（水胶格底）-过光胶', price: 4.1, weight: 0.2},
+    {name: '素面银镭射50#油胶（白底）-过光胶', price: 5.5, weight: 0.24},
+    {name: '银方格镭射50#（油胶）-过光胶', price: 5.9, weight: 0.24},
+    {name: '双层格铜-过光胶', price: 4.2, weight: 0.35},
+    {name: '铜板/特光/书写（热胶黄底）-过光胶', price: 2.55, weight: 0.224},
+    {name: '铜板/特光/书写（加粘热胶黄底）-过光胶', price: 2.65, weight: 0.224},
+    {name: '哑银龙25#（强粘黄底）-过光胶', price: 3.4, weight: 0.212},
+    {name: '哑银龙50#（黄底）-过光胶', price: 3.45, weight: 0.247},
+    {name: '哑银龙50#强粘（黄底）-过光胶', price: 3.7, weight: 0.247},
+    {name: '哑银龙100#（水胶）-过光胶', price: 7.4, weight: 0.326},
+    {name: '光银龙25#黄底-过光胶', price: 3.3, weight: 0.316},
+    {name: '光银龙50#黄底-过光胶', price: 3.8, weight: 0.247},
+    {name: '光银龙100#-过光胶', price: 8.2, weight: 0.326},
+    {name: '光银龙（100#油胶）-过光胶', price: 9.2, weight: 0.326},
+    {name: '拉丝银（50#白底）-过光胶', price: 4.8, weight: 0.233},
+    {name: '透明龙25#强粘（黄底）-过光胶', price: 2.95, weight: 0.312},
+    {name: '透明龙25#强粘（格底）-过光胶', price: 3.2, weight: 0.2},
+    {name: '透明龙50#（黄底）-过光胶', price: 3.35, weight: 0.24},
+    {name: '透明龙50#强粘-过光胶', price: 3.5, weight: 0.24},
+    {name: '透明龙100#-过光胶', price: 6, weight: 0.326},
+    {name: '透明龙100#油胶-过光胶', price: 6.3, weight: 0.326},
+    {name: '可移透明龙25#-过光胶', price: 4.2, weight: 0.212},
+    {name: '可移透明龙50#-过光胶', price: 4.8, weight: 0.24},
+    {name: '合成纸（54#白底）-过哑胶', price: 3.45, weight: 0.23},
+    {name: '合成纸（54#格底）-过哑胶', price: 3.45, weight: 0.22},
+    {name: '合成纸（75#白底）-过哑胶', price: 3.95, weight: 0.249},
+    {name: '合成纸（75#格底）-过哑胶', price: 3.95, weight: 0.185},
+    {name: '合成纸100#（白底）-过哑胶', price: 6.2, weight: 0.32},
+    {name: '可移合成纸54#（白底）-过哑胶', price: 4.45, weight: 0.22},
+    {name: '可移合成纸75#（白底）-过哑胶', price: 5, weight: 0.249},
+    {name: 'PET光白25#（格底）-过哑胶', price: 4.5, weight: 0.162},
+    {name: 'PET光白50#-过哑胶', price: 4.9, weight: 0.182},
+    {name: '素面银镭射50#（水胶白底）-过哑胶', price: 4.4, weight: 0.24},
+    {name: '素面银镭射50#（水胶格底）-过哑胶', price: 4.4, weight: 0.21},
+    {name: '素面银镭射50#油胶（白底）-过哑胶', price: 5.8, weight: 0.24},
+    {name: '银方格镭射50#（油胶）-过哑胶', price: 6.2, weight: 0.24},
+    {name: '铜板/特光/书写（热胶黄底）-过哑胶', price: 2.85, weight: 0.224},
+    {name: '铜板/特光/书写（加粘热胶黄底）-过哑胶', price: 2.95, weight: 0.224},
+    {name: '哑银龙25#（强粘黄底）-过哑胶', price: 3.7, weight: 0.212},
+    {name: '哑银龙50#（黄底）-过哑胶', price: 3.75, weight: 0.247},
+    {name: '哑银龙50#强粘（黄底）-过哑胶', price: 4, weight: 0.247},
+    {name: '哑银龙100#（水胶）-过哑胶', price: 7.5, weight: 0.326},
+    {name: '光银龙25#黄底-过哑胶', price: 3.6, weight: 0.316},
+    {name: '光银龙50#黄底-过哑胶', price: 4.1, weight: 0.247},
+    {name: '光银龙100#-过哑胶', price: 8.5, weight: 0.326},
+    {name: '光银龙（100#油胶）-过哑胶', price: 9.5, weight: 0.326},
+    {name: '拉丝银（50#白底）-过哑胶', price: 5.1, weight: 0.233},
+    {name: '透明龙25#强粘（黄底）-过哑胶', price: 3.25, weight: 0.312},
+    {name: '透明龙25#强粘（格底）-过哑胶', price: 3.5, weight: 0.2},
+    {name: '透明龙50#（黄底）-过哑胶', price: 3.65, weight: 0.24},
+    {name: '透明龙50#强粘-过哑胶', price: 3.8, weight: 0.24},
+    {name: '透明龙100#-过哑胶', price: 6.3, weight: 0.326},
+    {name: '透明龙100#油胶-过哑胶', price: 6.6, weight: 0.326},
+    {name: '可移透明龙25#-过哑胶', price: 4.5, weight: 0.212},
+    {name: '可移透明龙50#-过哑胶', price: 5.1, weight: 0.24},
+    {name: '哑银VOID全转移过光胶', price: 7.6, weight: 0.162},
+    {name: '哑银VOID全转移过哑胶', price: 7.6, weight: 0.162},
+    {name: '素面镭射VOID25#（阳版半转）', price: 10, weight: 0.162},
+    {name: '素面镭射VOID25#（阳版半转）-过光胶', price: 11, weight: 0.162},
+    {name: '金色小米点50#', price: 5, weight: 0.21},
+    {name: '金色小米点50#-过光胶', price: 5.8, weight: 0.24},
+    {name: '银色小米点50#', price: 4, weight: 0.21},
+    {name: '银色小米点50#-过光胶', price: 4.8, weight: 0.24},
+    {name: '银色小米点50#-过哑胶', price: 5, weight: 0.24},
+    {name: '金色小方格50#', price: 4.8, weight: 0.21},
+    {name: '金色小方格50#-过光胶', price: 5.6, weight: 0.24},
+    {name: '金色小方格50#-过哑胶', price: 5.8, weight: 0.24},
+    {name: '轮胎胶铜版', price: 5.5, weight: 0.267},
+    {name: '轮胎胶铜版-过光胶', price: 6.3, weight: 0.297},
+    {name: '轮胎胶铜版-过哑胶', price: 6.5, weight: 0.297},
+    {name: '光胶', price: 0.8, weight: 0.03},
+    {name: '哑胶', price: 1, weight: 0.03}
+];
+
+// 方案管理功能
+let currentSchemes = [];
+
+function createSchemeCard(data) {
+    const card = document.createElement('div');
+    card.className = 'scheme-card';
+    card.innerHTML = `
+        <div class="delete-btn" onclick="deleteScheme(this)">×</div>
+        <div class="input-group">
+            <label>材料类型</label>
+            <select class="material">
+                ${materials.map(m => `
+                    <option value="${m.name}" ${m.name === data.material ? 'selected' : ''}>
+                        ${m.name}
+                    </option>
+                `).join('')}
+            </select>
+        </div>
+        <div class="input-group">
+            <label>长度(mm)</label>
+            <input type="number" value="${data.length}" class="length">
+        </div>
+        <div class="input-group">
+            <label>宽度(mm)</label>
+            <input type="number" value="${data.width}" class="width">
+        </div>
+        <div class="input-group">
+            <label>数量(个)</label>
+            <input type="number" value="${data.quantity}" class="quantity">
+        </div>
+        <div class="input-group">
+            <label>刀模数量</label>
+            <input type="number" value="${data.knifeMold}" class="knifeMold">
+        </div>
+        <div class="input-group">
+            <label>颜色数量</label>
+            <input type="number" value="${data.colors}" class="colors">
+        </div>
+    `;
+    return card;
+}
+
+function addScheme() {
+    const container = document.getElementById('schemeContainer');
+    const baseData = container.children.length > 0
+        ? getSchemeData(container.lastElementChild)
+        : {
+            material: '易碎纸',
+            length: 100,
+            width: 80,
+            quantity: 1000,
+            knifeMold: 1,
+            colors: 4
+        };
+
+    container.appendChild(createSchemeCard(baseData));
+    addEventListeners();
+    calculateTotal();
+}
+
+function deleteScheme(deleteBtn) {
+    const card = deleteBtn.closest('.scheme-card');
+    card.remove();
+    calculateTotal();
+}
+
+// 计算核心逻辑
+function calculateTotal() {
+    const summary = [];
+
+    document.querySelectorAll('.scheme-card').forEach(card => {
+        const data = getSchemeData(card);
+        const material = materials.find(m => m.name === data.material);
+
+        // 出血计算
+        const calcLength = data.length + 4;
+        const calcWidth = data.width + 2;
+
+        // 各项费用计算
+        const printingFee = (0.02 * data.quantity / data.knifeMold) + 30;
+        const filmFee = calcLength * calcWidth * data.knifeMold * data.colors * 0.001;
+        const materialCost = calcLength * calcWidth * material.price * data.quantity * 0.000001;
+
+        // 运费计算
+        const materialWeight = calcLength * calcWidth * material.weight * 0.000001 * data.quantity;
+        const totalWeight = materialWeight + 0.1;
+        let shippingCost = totalWeight <= 0.5 ? 2.5 :
+                         totalWeight <= 1.5 ? 5 :
+                         5 + Math.ceil(totalWeight - 1.5) * 3;
+
+        // 总价汇总
+        const total = (printingFee + filmFee + materialCost + shippingCost).toFixed(2);
+
+        summary.push({
+            length: data.length,
+            width: data.width,
+            quantity: data.quantity,
+            total
+        });
+    });
+
+    updateSummaryTable(summary);
+}
+
+// 辅助函数
+function getSchemeData(card) {
+    return {
+        material: card.querySelector('.material').value,
+        length: Number(card.querySelector('.length').value) || 0,
+        width: Number(card.querySelector('.width').value) || 0,
+        quantity: Number(card.querySelector('.quantity').value) || 0,
+        knifeMold: Number(card.querySelector('.knifeMold').value) || 1,
+        colors: Number(card.querySelector('.colors').value) || 0
+    };
+}
+
+function updateSummaryTable(data) {
+    const tbody = document.getElementById('summaryTable');
+    tbody.innerHTML = data.map(item => `
+        <tr>
+            <td>${item.length}mm</td>
+            <td>${item.width}mm</td>
+            <td>${item.quantity.toLocaleString()}</td>
+            <td class="total-price">¥${item.total}</td>
+        </tr>
+    `).join('');
+}
+
+function addEventListeners() {
+    document.querySelectorAll('.scheme-card input, .scheme-card select').forEach(el => {
+        el.addEventListener('input', calculateTotal);
+    });
+}
+
+// 初始化
+window.onload = () => {
+    const container = document.getElementById('schemeContainer');
+    if(container.children.length === 0) {
+        addScheme();
+    }
+}
+</script>
+</body>
+</html>
